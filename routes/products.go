@@ -70,3 +70,51 @@ func GetProduct(c *fiber.Ctx) error {
 
 	return c.Status(200).JSON(productReply)
 }
+
+func UpdateProduct(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(200).JSON("Please ensure that the id is an int")
+	}
+	var product model.Product
+
+	if err := findProduct(id, &product); err != nil {
+		return c.Status(500).JSON(err.Error())
+	}
+
+	type UpdateProduct struct {
+		Name         string `json:"name"`
+		SerialNumber string `json:"serial_number"`
+	}
+
+	var updateProductReq UpdateProduct
+
+	if err := c.BodyParser(&updateProductReq); err != nil {
+		return c.Status(500).JSON(err.Error())
+	}
+
+	product.Name = updateProductReq.Name
+	product.SerialNumber = updateProductReq.SerialNumber
+
+	database.Database.Db.Save(product)
+
+	return c.Status(200).JSON("Product has successfully been updated")
+}
+
+func DeleteProduct(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(400).JSON("Please ensure that the id in an int")
+	}
+
+	var product model.Product
+
+	if err := findProduct(id, &product); err != nil {
+		return c.Status(500).JSON(err.Error())
+	}
+
+	if err := database.Database.Db.Delete(product); err != nil {
+		return c.Status(404).JSON(err.Error)
+	}
+	return c.Status(200).JSON("Product has been succesfully been deleted")
+}
