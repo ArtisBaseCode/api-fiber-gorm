@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"errors"
+
 	"github.com/artisbasecode/api-fiber-gorm/database"
 	"github.com/artisbasecode/api-fiber-gorm/model"
 	"github.com/gofiber/fiber/v2"
@@ -41,4 +43,30 @@ func GetUsers(c *fiber.Ctx) error {
 	}
 
 	return c.Status(200).JSON(usersReply)
+}
+
+func findUser(id int, user *model.User) error {
+	database.Database.Db.Find(&user, "id = ?", id)
+	if user.ID == 0 {
+		return errors.New("User does not exist")
+	}
+
+	return nil
+}
+
+func GetUser(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+
+	var user model.User
+	if err != nil {
+		return c.Status(200).JSON("Please ensure that :id is an int")
+	}
+
+	if err := findUser(id, &user); err != nil {
+		return c.Status(400).JSON(err.Error())
+	}
+
+	userReply := CreateUserRequest(user)
+
+	return c.Status(200).JSON(userReply)
 }
